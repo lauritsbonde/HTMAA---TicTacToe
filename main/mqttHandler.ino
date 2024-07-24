@@ -44,11 +44,11 @@ void reconnect() {
 
 void callback(char* topic, byte* payload, unsigned int length) {
   String incommingMessage = "";
-  for (int i = 0; i < length; i++) incommingMessage+=(char)payload[i];
-
+  for (int i = 0; i < length; i++) {
+    incommingMessage+=(char)payload[i];
+  }
+  
   Serial.println("Message arrived ["+String(topic)+"]"+incommingMessage);
-
-
 }
 
 /**** Method for Publishing MQTT Messages **********/
