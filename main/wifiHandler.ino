@@ -8,7 +8,7 @@ ESP8266WiFiClass getWiFi() {
   return WiFi;
 }
 
-bool checkConnected() {
+bool checkWiFiConnected() {
   return WiFi.isConnected();
 }
 
@@ -32,7 +32,7 @@ String isConnectedPage() {
 }
 
 void handleRoot() {
-  if (checkConnected()) {
+  if (checkWiFiConnected()) {
     server.send(200, "text/html", isConnectedPage());
     return;
   }
@@ -44,32 +44,59 @@ void handleRoot() {
 }
 
 void handleScan() {
-  if (checkConnected()) {
+  if (checkWiFiConnected()) {
     server.send(200, "text/html", isConnectedPage());
     return;
   }
+  
   String page = "<html><body>";
   page += "<h1>Available Networks</h1>";
   int n = WiFi.scanNetworks();
+  
   if (n == 0) {
     page += "<p>No networks found</p>";
   } else {
+    // Arrays to store SSID and RSSI values
+    String ssids[n];
+    int rssis[n];
+    int count = 0;
+    
+    // Insertion sort while inserting networks
     for (int i = 0; i < n; ++i) {
+      int rssi = WiFi.RSSI(i);
+      String ssid = WiFi.SSID(i);
+
+      // Find the position to insert the new network
+      int j = count - 1;
+      while (j >= 0 && rssis[j] < rssi) {
+        rssis[j + 1] = rssis[j];
+        ssids[j + 1] = ssids[j];
+        j--;
+      }
+      // Insert the new network
+      rssis[j + 1] = rssi;
+      ssids[j + 1] = ssid;
+      count++;
+    }
+    
+    // Generate HTML with sorted SSID and RSSI values
+    for (int i = 0; i < count; ++i) {
       page += "<form action=\"/connect\" method=\"get\">";
-      page += "SSID: " + WiFi.SSID(i) + " (RSSI: " + String(WiFi.RSSI(i)) + ")";
-      page += "<input type=\"hidden\" name=\"ssid\" value=\"" + WiFi.SSID(i) + "\">";
+      page += "SSID: " + ssids[i] + " (RSSI: " + String(rssis[i]) + ")";
+      page += "<input type=\"hidden\" name=\"ssid\" value=\"" + ssids[i] + "\">";
       page += "<input type=\"password\" name=\"password\" placeholder=\"Enter Password\">";
       page += "<input type=\"submit\" value=\"Connect\">";
       page += "</form><br>";
     }
   }
+  
   page += "<p><a href=\"/\">Back</a></p>";
   page += "</body></html>";
   server.send(200, "text/html", page);
 }
 
 void handleConnect() {
-  if (checkConnected()) {
+  if (checkWiFiConnected()) {
     server.send(200, "text/html", isConnectedPage());
     return;
   }
@@ -79,7 +106,7 @@ void handleConnect() {
 
   Serial.print("Connecting to: ");
   Serial.print(ssid);
-
+  
   WiFi.begin(ssid.c_str(), password.c_str());
 
   String page = "<html><body>";

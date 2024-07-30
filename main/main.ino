@@ -1,19 +1,21 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
+#include <ArduinoJson.h>
+#include "./enums.h"
 // wifiHandler.ino has all the code used for wifi setup - it is automatically concatinated to this file
 
-const char* apSSID = "TicTacToe";
+const char* apSSID = "_TicTacToe";
 const char* apPassword = "12345678";
 
 ESP8266WebServer server(80);
-
-bool startedMqttConnect = false;
 
 void setup() {
   Serial.begin(115200);
   Serial.println("Started");
 
   // Set up Access Point
+  WiFi.setAutoReconnect(true);
+  WiFi.setSleepMode(WIFI_NONE_SLEEP);
   WiFi.mode(WIFI_AP_STA);
   WiFi.softAP(apSSID, apPassword);
   Serial.println("Access Point started");
@@ -32,17 +34,13 @@ int counter = 0;
 void loop() {
   server.handleClient();
 
-  if(getWiFi().isConnected() && !startedMqttConnect){
-    startedMqttConnect = true;
+  if(checkWiFiConnected() && !mqttClientIsConnected()){
     connectToMqtt();
   }
 
   if(mqttClientIsConnected()) {
-    String message = "Hej - ";
-    message += counter;
-    publishMessage("lol", message, false);
-    counter++;
-    delay(500);
+    mqttLoop();
+    gameLoop();
   }
 
 }

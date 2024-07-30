@@ -1,6 +1,7 @@
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
 #include <WiFiClientSecure.h>
+#include <ArduinoJson.h>
 // This file also uses functions defined in the wifiHandler.ino - they are automatically concatinated
 
 
@@ -10,6 +11,9 @@ const char* mqtt_username = "lauritsbonde";
 const char* mqtt_password = "rzF1@2E&XZ$nUpTQTQ3z";
 const int mqtt_port =8883;
 
+const char* subscribeTopics[] = {"connect", "move", "selectedPiece", "startNumber", "move"};
+const int numTopics = 5; // this is the length of the array above
+
 /**** Secure WiFi Connectivity Initialisation *****/
 WiFiClientSecure espClient;
 
@@ -18,6 +22,10 @@ PubSubClient client(espClient);
 
 bool mqttClientIsConnected(){
   return client.connected();
+}
+
+void mqttLoop(){
+  client.loop();
 }
 
 /************* Connect to MQTT Broker ***********/
@@ -31,7 +39,9 @@ void reconnect() {
     if (client.connect(clientId.c_str(), mqtt_username, mqtt_password)) {
       Serial.println("connected");
 
-      client.subscribe("led_state");   // subscribe the topics here
+      for(int i = 0; i < numTopics; i++){
+        client.subscribe(subscribeTopics[i]);   // subscribe the topics here
+      }
 
     } else {
       Serial.print("failed, rc=");
@@ -42,19 +52,128 @@ void reconnect() {
   }
 }
 
-void callback(char* topic, byte* payload, unsigned int length) {
-  String incommingMessage = "";
-  for (int i = 0; i < length; i++) {
-    incommingMessage+=(char)payload[i];
+/************* These functions will only get called on messages from others ***********/
+void handleSelectedPiece(JsonDocument doc){
+  int oppPlays = doc["selected"];
+  if(oppPlays == Cross) {
+    setOppPiece(Cross);
+  } else if(oppPlays == Circle){
+    setOppPiece(Circle);
+  } else {
+    Serial.println("Unknown piece");
   }
+}
+
+void handleWhoStartsMessage(JsonDocument doc) {
+  long oppRandNum = doc["randLong"];
+
+  Serial.print("oppRandomNum: ");
+  Serial.println(oppRandNum);
+
+  decideWhoStarts(oppRandNum); // gameHandler.ino function
+}
+
+void handleMove(JsonDocument doc){
+  int row = doc["row"];
+  int col = doc["col"];
+
+  //TODO make this function
+  // placePiece(row, col, piece)
+}
+
+/**** Function to handle incoming messages *****/
+void callback(char* topic, byte* payload, unsigned int length) {
+  // Create a StaticJsonDocument with a sufficient size for your JSON message
+  StaticJsonDocument<256> doc;
   
-  Serial.println("Message arrived ["+String(topic)+"]"+incommingMessage);
+  // Attempt to deserialize the JSON from the payload
+  DeserializationError error = deserializeJson(doc, payload, length);
+  
+  // Print the topic
+  Serial.print("Message arrived [");
+  Serial.print(topic);
+  Serial.print("]: ");
+  
+  // Check if deserialization was successful
+  if (error) {
+    Serial.print("deserializeJson() failed: ");
+    Serial.println(error.f_str());
+    return;
+  }
+
+  // check that the message is not from self
+  String mac = doc["MAC"];
+  if(strcmp(mac.c_str(), getWiFi().macAddress().c_str()) == 0) {
+    Serial.println("Own message");
+    return;
+  }
+
+  Serial.print("topic: ");
+  Serial.println(topic);
+
+  Serial.print("stcmp: ");
+  Serial.println(strcmp(topic, "selectedPiece"));
+
+  if(strcmp(topic, "selectedPiece") == 0) {
+    Serial.println("handling Piece selection");
+    handleSelectedPiece(doc);
+  } else if(strcmp(topic, "startNumber") == 0) {
+    Serial.println("handling who starts");
+    handleWhoStartsMessage(doc);
+  } else if(strcmp(topic, "move")) {
+    Serial.println("Handling move");
+    handleMove(doc);
+  } else {
+    Serial.println("Something went wrong");
+  }
 }
 
 /**** Method for Publishing MQTT Messages **********/
-void publishMessage(const char* topic, String payload , boolean retained){
-  if (client.publish(topic, payload.c_str(), true))
-      Serial.println("Message publised ["+String(topic)+"]: "+payload);
+void publishMessage(const char* topic, JsonDocument doc , boolean retained){
+  String jsonString;
+  doc["MAC"] = getWiFi().macAddress();
+  serializeJson(doc, jsonString);
+  if (client.publish(topic, jsonString.c_str(), retained)) {
+    Serial.println("Message publised ["+String(topic)+"]: "+jsonString);
+  } else {
+    Serial.println("Message publish failed");
+  }
+}
+
+/*** Methods for Game Messages ****/
+void connected(){
+  JsonDocument doc;
+
+  // Assign values to the JSON document
+  doc["message"] = "connected";
+
+  // Create a String object to hold the serialized JSON
+  publishMessage("connected", doc, false);
+}
+
+void sendSelectPieceMessage(int piece) {
+  JsonDocument doc;
+
+  // Assign values to the JSON document
+  doc["selected"] = piece;
+  
+  publishMessage("selectedPiece", doc, false);
+}
+
+void sendRandomNumber(long randomNum) {
+  JsonDocument doc;
+
+  doc["randLong"] = randomNum;
+
+  publishMessage("startNumber", doc, false);
+}
+
+void sendMove(int row, int col) {
+  JsonDocument doc;
+  doc["row"] = row;
+  doc["col"] = col;
+
+  publishMessage("move", doc, false);
 }
 
 void connectToMqtt() {
@@ -63,10 +182,16 @@ void connectToMqtt() {
   client.setServer(mqtt_server, mqtt_port);
   client.setCallback(callback);
 
-  while(!client.connected()) {
+  int timeOut = 0;
+
+  while(!client.connected() && timeOut < 10) {
     reconnect();
+    timeOut++;
   }
 
-  publishMessage("connected", "yeah!", false);
+  JsonDocument doc;
+  doc["message"] = "Connected";
+
+  publishMessage("connected", doc, false);
 }
 
