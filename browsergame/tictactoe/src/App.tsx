@@ -90,9 +90,17 @@ function App() {
 							console.log('Already connected');
 							return;
 						}
-						mqttConnect('wss://92cb876ba5c6470baaadb3f0ae70e2b8.s1.eu.hivemq.cloud:8884/mqtt', {
-							username: 'lauritsbonde',
-							password: 'rzF1@2E&XZ$nUpTQTQ3z',
+						const url = process.env.REACT_APP_MQTT_URL;
+						const username = process.env.REACT_APP_MQTT_USERNAME;
+						const password = process.env.REACT_APP_MQTT_PASSWORD;
+						if (!url || !username || !password) {
+							console.error('Missing MQTT_URL, MQTT_USERNAME, or MQTT_PASSWORD');
+							return;
+						}
+						console.log(url, username, password);
+						mqttConnect(url, {
+							username,
+							password,
 						});
 					}}>
 					Connect
