@@ -11,6 +11,7 @@ long randomNumberForStart = 0;
 u_long lastStatusMessage = 0;
 u_long lastGamePlayHandle = 0;
 
+
 int grid[3][3] = {
   {0,0,0},
   {0,0,0},
@@ -18,9 +19,10 @@ int grid[3][3] = {
 };
 
 GamePiece_T analogReadToGamePiece(int readValue) {
-  if (readValue < 100) return Unknown;
-  if(readValue < 500) return Cross;
-  if(readValue > 500) return Circle;
+  if (readValue < 10) return Unknown;
+  if(readValue >= 10 && < 400) return Circle;
+  if(readValue > 400) return Cross;
+ 
   return Unknown;
 }
 
@@ -101,6 +103,13 @@ void handleGamePlay(){
       }
     } else if(gameState == MyTurn) {
       
+       int row, coll, value;
+      readBoardValue(grid, &row, &coll, &value);
+      
+      grid[row][col] = value;
+      sendMove(row, col);
+      gameState = TheirTurn;      
+    
     }
 
     lastGamePlayHandle = millis();
