@@ -2,7 +2,7 @@
 #include <stdbool.h>
 
 /*
-Author: Nicklas Jeppesen (nicje) and laurtiz Bonde (?)
+Author: Nicklas Jeppesen (nicje) and laurtis Bonde (lauh)
 
 This code is used to read two brick for tic tac toe
 Circle bricks: has a 680K resistor inside, and output a small value around 10-11 ish when reading by arduino. 
@@ -24,12 +24,6 @@ void readBoard(int grid[3][3], int* _row, int* _column, int* _boardValue);
 void getGridPosition(int channel, int* row, int* col);
 int getChannelGridPosition(int row, int col);
 float readMux(int channel);
-
-int grid[3][3] = {
-  {0,0,0},
-  {0,0,0},
-  {0,0,0},
-};
 
 
 int ChanelsPositions[3][3] = {
@@ -115,8 +109,8 @@ void readBoard(int grid[3][3], int* _row, int* _column, int* _boardValue)
 
 void getGridPosition(int channel, int* row, int* col) {
   
-  int channel_row = grid[channel][0]; 
-  int channel_col = grid[channel][1]; 
+  int channel_row = gameBoardChannelsPosistions[channel][0]; 
+  int channel_col = gameBoardChannelsPosistions[channel][1]; 
   *row = channel_row; 
   *col = channel_col;   
 }
@@ -125,13 +119,6 @@ int getChannelGridPosition(int row, int col) {
   return ChanelsPositions[row][col];
 }
 
-// read the board 
-float readMux(int channel){
- 
-  //read the value at the SIG pin
-  int val = 20;
-  return val;
-}
 
 // read the board 
 float readMux(int channel){

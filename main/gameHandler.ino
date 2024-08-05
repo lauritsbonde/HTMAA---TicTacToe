@@ -20,7 +20,7 @@ int grid[3][3] = {
 
 GamePiece_T analogReadToGamePiece(int readValue) {
   if (readValue < 10) return Unknown;
-  if(readValue >= 10 && < 400) return Circle;
+  if(readValue < 400) return Circle;
   if(readValue > 400) return Cross;
  
   return Unknown;
@@ -43,6 +43,13 @@ void decideWhoStarts(long oppRandomNum) {
     Serial.println("i start");
     gameState = MyTurn;
   }
+}
+
+void placeOppPiece(int row, int col) {
+  // if(gameState == TheirTurn){
+    placePiece(row, col); // gantryHandler.ino
+    gameState = MyTurn;
+  // }
 }
 
 void printStatusMessage(String message){
@@ -103,8 +110,8 @@ void handleGamePlay(){
       }
     } else if(gameState == MyTurn) {
       
-       int row, coll, value;
-      readBoardValue(grid, &row, &coll, &value);
+       int row, col, value;
+      readBoardValue(grid, &row, &col, &value);
       
       grid[row][col] = value;
       sendMove(row, col);
@@ -115,6 +122,7 @@ void handleGamePlay(){
     lastGamePlayHandle = millis();
   }
 }
+
 
 void gameLoop() {
   updateGameState();

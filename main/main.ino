@@ -13,6 +13,8 @@ void setup() {
   Serial.begin(115200);
   Serial.println("Started");
 
+  setupGantry(); // gantryHandler.ino
+
   // Set up Access Point
   WiFi.setAutoReconnect(true);
   WiFi.setSleepMode(WIFI_NONE_SLEEP);

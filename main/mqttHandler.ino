@@ -11,8 +11,8 @@ const char* mqtt_username = "lauritsbonde";
 const char* mqtt_password = "rzF1@2E&XZ$nUpTQTQ3z";
 const int mqtt_port =8883;
 
-const char* subscribeTopics[] = {"connect", "move", "selectedPiece", "startNumber", "move"};
-const int numTopics = 5; // this is the length of the array above
+const char* subscribeTopics[] = {"connect", "move", "selectedPiece", "startNumber"};
+const int numTopics = 4; // this is the length of the array above
 
 /**** Secure WiFi Connectivity Initialisation *****/
 WiFiClientSecure espClient;
@@ -77,8 +77,7 @@ void handleMove(JsonDocument doc){
   int row = doc["row"];
   int col = doc["col"];
 
-  //TODO make this function
-  // placePiece(row, col, piece)
+  placeOppPiece(row, col); // gameHandler.ino function
 }
 
 /**** Function to handle incoming messages *****/
@@ -111,16 +110,13 @@ void callback(char* topic, byte* payload, unsigned int length) {
   Serial.print("topic: ");
   Serial.println(topic);
 
-  Serial.print("stcmp: ");
-  Serial.println(strcmp(topic, "selectedPiece"));
-
   if(strcmp(topic, "selectedPiece") == 0) {
     Serial.println("handling Piece selection");
     handleSelectedPiece(doc);
   } else if(strcmp(topic, "startNumber") == 0) {
     Serial.println("handling who starts");
     handleWhoStartsMessage(doc);
-  } else if(strcmp(topic, "move")) {
+  } else if(strcmp(topic, "move") == 0) {
     Serial.println("Handling move");
     handleMove(doc);
   } else {
