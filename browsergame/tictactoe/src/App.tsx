@@ -5,7 +5,7 @@ import ClearIcon from '@mui/icons-material/Clear';
 import CircleIcon from '@mui/icons-material/Circle';
 import FilterListOffIcon from '@mui/icons-material/FilterListOff';
 
-const subscribtions = ['connected', 'move', 'selectedPiece', 'startNumber', 'move'];
+const subscribtions = ['connected', 'move', 'selectedPiece', 'startNumber'];
 
 function App() {
 	const [client, setClient] = useState<null | MqttClient>(null);
